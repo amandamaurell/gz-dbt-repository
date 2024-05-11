@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: raw # name to reference the database in sql file
-    database: gz_raw_data #actual name of the database
+    schema: gz_raw_data #actual name/schema of the database
 
     tables:
       - name: sales #name to reference on sql file
