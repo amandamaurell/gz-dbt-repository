@@ -1,0 +1,14 @@
+version: 2
+
+sources:
+  - name: raw # name to reference the database in sql file
+    database: gz_raw_data #actual name of the database
+
+    tables:
+      - name: sales #name to reference on sql file
+        identifier: raw_gz_sales #name of the table on bigquery
+
+      - name: product
+        identifier: raw_gz_product
+      - name: ship
+        identifier: raw_gz_ship
