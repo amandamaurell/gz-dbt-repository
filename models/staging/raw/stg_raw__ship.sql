@@ -11,7 +11,8 @@ renamed as (
     select
         orders_id,
         shipping_fee,
-        log_cost,
+        -- shipping_fee_1,
+        logcost,
         ship_cost
 
     from source
@@ -19,3 +20,4 @@ renamed as (
 )
 
 select * from renamed
+-- where shipping_fee != shipping_fee_1

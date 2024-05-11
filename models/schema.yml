@@ -9,6 +9,6 @@ sources:
         identifier: raw_gz_sales #name of the table on bigquery
 
       - name: product
-        identifier: raw_product
+        identifier: raw_gz_product
       - name: ship
-        identifier: raw_ship
+        identifier: raw_gz_ship
