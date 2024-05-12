@@ -1,0 +1,273 @@
+version: 2
+
+sources:
+  - name: raw # name to reference the database in sql file
+    schema: gz_raw_data #actual name/schema of the database
+    description: greenweez raw data source
+
+    tables:
+      - name: sales #name to reference on sql file
+        identifier: raw_gz_sales #name of the table on bigquery
+        description: sales of greenweez / there is one row per product_id found in each orders_id.
+        columns:
+          - name: sales_id
+            description: unique key of this table. Which is a combination of order_id and product_id.
+            data_type: string
+
+          - name: data_date
+            description: date of purchase
+            data_type: date
+
+          - name: orders_id
+            description: foreign key of each ship/order
+            data_type: integer
+          
+          - name: pdt_id
+            description: foreign key of each product 
+            data_type: integer
+
+          - name: revenue
+            description: the price paid by customer for each product. revenue = quantity * selling_price
+            data_type: float
+          
+          - name: quantity
+            description: the number of an specific product purchased per order
+            data_type: integer
+        
+        tests:
+          - unique:
+              column_name: "(orders_id || '-' || pdt_id)"
+          # or an alternative is to install a package dbt_utils and use this function bellow
+          # - dbt_utils.unique_combination_of_columns:
+              # combination_of_columns:
+                # - orders_id
+                # - products_id
+        
+        # adding freshness test to warn me in case the table is older than a specified period
+        freshness: 
+          warn_after: {count: 90, period: day}
+        loaded_at_field: "CAST(date_date as timestamp)"
+        # run dbt source freshness to test if data in sales is more than 90days
+        
+
+      - name: product
+        identifier: raw_gz_product
+        description: product ids and it's purchase price
+        columns:
+          - name: products_id
+            description: unique identifier of this table
+            data_type: integer
+            tests:
+              - unique
+              - not_null
+          
+          - name: purchase_price
+            description: purchase price of each product
+            data_type: string
+
+      - name: ship
+
+        identifier: raw_gz_ship
+        description: ship of greenweez
+        columns:
+          - name: orders_id
+            description: primary key of this table
+            data_type: integer
+            tests:
+              - unique
+              - not_null
+                  
+          - name: shipping_fee
+            description: the fee price a customer pay for shipping
+            data_type: float
+
+          - name: shipping_fee_1
+            description: the fee price a customer pay for shipping
+            data_type: float
+
+          - name: logCost
+            description: the cost of logistics (preparing the parcel at the warehouse)
+            data_type: float
+
+          - name: ship_cost
+            description: the shipping cost paid by greenweez to the carrier
+            data_type: string
+
+models:
+  - name: stg_raw__product
+
+  - name: stg_raw__sales
+
+  - name: stg_raw__ship
+
+  - name: int_sales_margin
+    description: This table contains information about the sales margin
+    columns:
+      - name: date_date
+        description: date of each sale/purchase
+        data_type: date
+
+      - name: orders_id
+        description: foreign key of each ship/order
+        data_type: integer
+
+      - name: products_id
+        description: foreign key of each product 
+        data_type: integer
+
+      - name: revenue
+        description: the price paid by customer for each product. revenue = quantity * selling_price
+        data_type: float
+      
+      - name: quantity
+        description: the number of an specific product purchased per order
+        data_type: integer
+
+      - name: purchase_price
+        description: the purchase price of the product
+        data_type: float
+
+      - name: purchase_cost
+        description: the total cost of a purchase based of the quantity of items sold. Purchase_cost = Quantity * Purchase_price
+        data_type: float
+
+      - name: margin
+        description: Profit margin value greenweez has from the sale. Margin = Revenue - Purchase_cost
+        data_type: float
+    tests:
+      - unique:
+          column_name: "(orders_id || '-' || products_id)"
+      - not_null:
+          column_name:
+            - date_date
+            - orders_id
+            - products_id
+            - revenue
+            - quantity
+            - purchase_price
+            - purchase_cost
+            - margin
+
+  - name: int_orders_margin
+    description: information about the profit margin of each order
+    columns:
+      - name: orders_id
+        description: primary key of each ship/order
+        data_type: integer
+
+      - name: date_date
+        description: date of each sale/purchase
+        data_type: date
+
+      - name: revenue
+        description: total price paid by customer for each order. revenue = sum(quantity * selling_price)
+        data_type: float
+      
+      - name: quantity
+        description: total number of products purchased per order
+        data_type: float
+
+      - name: purchase_cost
+        description: total cost of each order based of the quantity of items sold. Purchase_cost = sum(Quantity * Purchase_price)
+        data_type: float
+
+      - name: margin
+        description: total Profit margin value greenweez has per order. Margin = sum(Revenue - Purchase_cost)
+        data_type: float
+
+    tests:
+      - unique:
+          column_name: orders_id
+      - not_null:
+          column_name:
+            - orders_id
+            - date_date
+            - revenue
+            - quantity
+            - purchase_cost
+            - margin
+
+  - name: int_orders_operational
+    description: information about the orders operational margin
+    columns:
+      - name: orders_id
+        description: primary key of each ship/order
+        data_type: integer
+
+      - name: date_date
+        description: date of each sale/purchase
+        data_type: date
+
+      - name: operational_margin
+        description: Profit margin including shipping fee received from the customer minnus the shipping and log costs. Operational margin = margin + shipping fee - log_cost - ship_cost
+        data_type: float
+
+      - name: revenue
+        description: total price paid by customer for each order. revenue = sum(quantity * selling_price)
+        data_type: float
+      
+      - name: quantity
+        description: total number of products purchased per order
+        data_type: float
+
+      - name: purchase_cost
+        description: total cost of each order based of the quantity of items sold. Purchase_cost = sum(Quantity * Purchase_price)
+        data_type: float
+
+      - name: margin
+        description: total Profit margin value greenweez has per order. Margin = sum(Revenue - Purchase_cost)
+        data_type: float
+
+      - name: shipping_fee
+        description: total fee price paid by the customer to greenweez for shipping the order
+        data_type: float
+
+      - name: log_cost
+        description: total logistic cost (preparing the parcel at the warehouse)
+        data_type: float
+
+      - name: ship_cost
+        description: total shipping cost paid by greenweez to the carrier
+        data_type: float
+
+    tests:
+      - unique:
+          column_name: orders_id
+      - not_null:
+          column_name:
+            - orders_id
+            - date_date
+            - operational_margin
+            - revenue
+            - quantity
+            - purchase_cost
+            - margin
+            - shipping_fee
+            - log_cost
+            - ship_cost
+
+  - name: finance_days
+    description: finance calculation per days
+
+    columns:
+      - name: nb_transactions
+        description: total number of transactions per day
+      - name: average_basket
+        description: average daily revenue
+    
+    tests:
+      - unique:
+          column_name: date_date
+      - not_null:
+          column_name:
+            - date_date
+            - nb_transactions
+            - revenue
+            - average_basket
+            - margin
+            - operational_margin
+            - purchase_cost
+            - shipping_fee
+            - log_cost
+            - ship_cost
+            - quantity
