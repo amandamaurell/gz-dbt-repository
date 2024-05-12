@@ -70,7 +70,7 @@ sources:
           - name: shipping_fee
             description: the fee price a customer pay for shipping
 
-          - name: logcost
+          - name: logCost
             description: the cost of logistics (preparing the parcel at the warehouse)
 
           - name: ship_cost
